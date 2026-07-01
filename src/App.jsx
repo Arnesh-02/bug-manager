@@ -7,6 +7,12 @@ const STATUS_META = {
   done: { label: "Done", text: "#15803D", bg: "#EFFAF1", border: "#BBE8C4", dot: "#22A649" },
 };
 
+const CATEGORIES = [
+  { id: "service", label: "Service" },
+  { id: "app", label: "App" },
+  { id: "ecommerce", label: "Ecommerce" },
+];
+
 function uid() {
   return "b" + Math.random().toString(36).slice(2, 9);
 }
@@ -15,6 +21,7 @@ export default function App() {
   const [bugs, setBugs] = useState([]);
   const [query, setQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [currentCategory, setCurrentCategory] = useState("service");
   const [formOpen, setFormOpen] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [draft, setDraft] = useState({ text: "", status: "pending" });
@@ -31,11 +38,12 @@ export default function App() {
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     return bugs.filter((bug) => {
+      if (bug.category !== currentCategory) return false;
       if (statusFilter !== "all" && bug.status !== statusFilter) return false;
       if (q && !bug.text.toLowerCase().includes(q)) return false;
       return true;
     });
-  }, [bugs, query, statusFilter]);
+  }, [bugs, query, statusFilter, currentCategory]);
 
   const saveDraft = () => {
     const text = draft.text.trim();
@@ -44,7 +52,7 @@ export default function App() {
     if (editingId) {
       setBugs((prev) => prev.map((bug) => (bug.id === editingId ? { ...bug, text, status: draft.status } : bug)));
     } else {
-      setBugs((prev) => [...prev, { id: uid(), text, status: draft.status }]);
+      setBugs((prev) => [...prev, { id: uid(), text, status: draft.status, category: currentCategory }]);
     }
 
     setFormOpen(false);
@@ -120,6 +128,20 @@ export default function App() {
       </header>
 
       <div style={styles.controls}>
+        <div style={styles.categoryRow}>
+          {CATEGORIES.map((category) => (
+            <button
+              key={category.id}
+              type="button"
+              className={"bt-chip" + (currentCategory === category.id ? " active" : "")}
+              style={styles.categoryChip}
+              onClick={() => setCurrentCategory(category.id)}
+            >
+              {category.label}
+            </button>
+          ))}
+        </div>
+
         <div style={styles.searchBox}>
           <Search size={15} color="#A5A6AC" />
           <input
@@ -147,7 +169,7 @@ export default function App() {
 
       <main style={styles.cardGrid}>
         {filtered.length === 0 ? (
-          <div style={styles.empty}>No bug reports found. Add a new issue to get started.</div>
+          <div style={styles.empty}>No bug reports found in this category. Add a new issue to get started.</div>
         ) : (
           filtered.map((bug) => {
             const status = STATUS_META[bug.status];
@@ -240,6 +262,8 @@ const styles = {
   statNum: { fontSize: 24, fontWeight: 700 },
   statLabel: { fontSize: 13, color: "#6B7280" },
   controls: { maxWidth: 1100, margin: "0 auto 24px", display: "flex", flexWrap: "wrap", gap: 14, alignItems: "center", justifyContent: "space-between" },
+  categoryRow: { display: "flex", gap: 10, flexWrap: "wrap", marginBottom: 10 },
+  categoryChip: { fontSize: 13, padding: "10px 16px", minWidth: 104 },
   searchBox: { display: "flex", alignItems: "center", gap: 10, flex: "1 1 280px", minWidth: 240 },
   chipRow: { display: "flex", flexWrap: "wrap", gap: 10 },
   chip: { fontSize: 13, padding: "10px 14px" },
